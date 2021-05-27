@@ -1,10 +1,10 @@
 """Define a Eufy Security base station."""
 from typing import TYPE_CHECKING
 
-from eufy_security_ws.event import Event, EventBase
+from eufy_security_ws_python.event import Event, EventBase
 
 if TYPE_CHECKING:
-    from eufy_security_ws.client import WebsocketClient
+    from eufy_security_ws_python.client import WebsocketClient
 
 
 class Station(EventBase):

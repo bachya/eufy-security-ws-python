@@ -7,12 +7,12 @@ from uuid import uuid4
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
 
-from eufy_security_ws.const import (
+from eufy_security_ws_python.const import (
     LOGGER,
     MIN_SERVER_SCHEMA_VERSION,
     MAX_SERVER_SCHEMA_VERSION,
 )
-from eufy_security_ws.errors import (
+from eufy_security_ws_python.errors import (
     CannotConnectError,
     ConnectionClosed,
     ConnectionFailed,
@@ -21,9 +21,9 @@ from eufy_security_ws.errors import (
     InvalidServerVersion,
     NotConnectedError,
 )
-from eufy_security_ws.event import Event
-from eufy_security_ws.model.driver import Driver
-from eufy_security_ws.model.version import VersionInfo
+from eufy_security_ws_python.event import Event
+from eufy_security_ws_python.model.driver import Driver
+from eufy_security_ws_python.model.version import VersionInfo
 
 SIZE_PARSE_JSON_EXECUTOR = 8192
 

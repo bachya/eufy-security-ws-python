@@ -1,12 +1,12 @@
 """Define the eufy-security-ws driver."""
 from typing import TYPE_CHECKING, Dict
 
-from eufy_security_ws.event import Event, EventBase
-from eufy_security_ws.model.device import Device
-from eufy_security_ws.model.station import Station
+from eufy_security_ws_python.event import Event, EventBase
+from eufy_security_ws_python.model.device import Device
+from eufy_security_ws_python.model.station import Station
 
 if TYPE_CHECKING:
-    from eufy_security_ws.client import WebsocketClient
+    from eufy_security_ws_python.client import WebsocketClient
 
 
 class Driver(EventBase):

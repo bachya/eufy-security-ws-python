@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List
 
-from .const import LOGGER
+from eufy_security_ws.const import LOGGER
 
 
 @dataclass

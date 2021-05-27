@@ -1,14 +1,20 @@
 """Define a Eufy Security device."""
-from ..event import Event, EventBase
+from typing import TYPE_CHECKING
+
+from eufy_security_ws.event import Event, EventBase
+
+if TYPE_CHECKING:
+    from eufy_security_ws.client import WebsocketClient
 
 
 class Device(EventBase):
     """Define a base device."""
 
-    def __init__(self, device: dict) -> None:
+    def __init__(self, client: "WebsocketClient", state: dict) -> None:
         """Initialize."""
         super().__init__()
-        self._device = device
+        self._client = client
+        self._state = state
 
     def __repr__(self) -> str:
         """Return the representation."""
@@ -27,41 +33,46 @@ class Device(EventBase):
     @property
     def enabled(self) -> bool:
         """Return whether the device is enabled."""
-        return self._device["enabled"]
+        return self._state["enabled"]
 
     @property
     def hardware_version(self) -> str:
         """Return the hardware version."""
-        return self._device["hardwareVersion"]
+        return self._state["hardwareVersion"]
 
     @property
     def model(self) -> str:
         """Return the model ID."""
-        return self._device["model"]
+        return self._state["model"]
 
     @property
     def name(self) -> str:
         """Return the name."""
-        return self._device["name"]
+        return self._state["name"]
 
     @property
     def serial_number(self) -> str:
         """Return the serial number."""
-        return self._device["serialNumber"]
+        return self._state["serialNumber"]
 
     @property
     def software_version(self) -> str:
         """Return the software version."""
-        return self._device["softwareVersion"]
+        return self._state["softwareVersion"]
 
     @property
     def station_serial_number(self) -> str:
         """Return the serial number of the station."""
-        return self._device["stationSerialNumber"]
+        return self._state["stationSerialNumber"]
+
+    @property
+    def type(self) -> str:
+        """Return the type."""
+        return self._state["type"]
 
     def handle_property_changed(self, event: Event) -> None:
         """Handle a "property changed" event."""
-        self._device[event.data["name"]] = event.data["value"]
+        self._state[event.data["name"]] = event.data["value"]
 
     def receive_event(self, event: Event) -> None:
         """React to an event."""

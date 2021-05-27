@@ -1,47 +1,20 @@
 """Define a Eufy Security base station."""
-from enum import Enum
+from typing import TYPE_CHECKING
 
-from ..event import Event, EventBase
+from eufy_security_ws.event import Event, EventBase
 
-
-class AlarmMode(Enum):
-    """Define a mapping of alarm modes to their integer counterparts."""
-
-    AWAY = 0
-    HOME = 1
-    DISARMED = 63
-    UNKNOWN = 99
-
-
-class GuardMode(Enum):
-    """Define a mapping of station modes to their integer counterparts."""
-
-    AWAY = 0
-    HOME = 1
-    SCHEDULE = 2
-    CUSTOM1 = 3
-    CUSTOM2 = 4
-    CUSTOM3 = 5
-    GEO = 47
-    DISARMED = 63
-    UNKNOWN = 99
+if TYPE_CHECKING:
+    from eufy_security_ws.client import WebsocketClient
 
 
 class Station(EventBase):
     """Define the station."""
 
-    def __init__(self, serial_number: str, state: dict) -> None:
+    def __init__(self, client: "WebsocketClient", state: dict) -> None:
         """Initialize."""
         super().__init__()
-
-        # Since this station's serial number is guaranteed to exist, it's safe to do
-        # an auto-assigned list comprehension here:
-        [self._station] = [
-            station
-            for station in state["stations"]
-            if station["serialNumber"] == serial_number
-        ]
-        self._serial_number = serial_number
+        self._client = client
+        self._state = state
 
     def __repr__(self) -> str:
         """Return the representation."""
@@ -60,58 +33,57 @@ class Station(EventBase):
     @property
     def connected(self) -> bool:
         """Return whether the station is connected and online."""
-        return self._station["connected"]
+        return self._state["connected"]
 
     @property
-    def alarm_mode(self) -> AlarmMode:
+    def alarm_mode(self) -> int:
         """Return the current alarm mode."""
-        try:
-            return AlarmMode(self._station["currentMode"])
-        except ValueError:
-            return AlarmMode.UNKNOWN
+        return self._state["currentMode"]
 
     @property
-    def guard_mode(self) -> GuardMode:
+    def guard_mode(self) -> int:
         """Return the current guard mode."""
-        try:
-            return GuardMode(self._station["guardMode"])
-        except ValueError:
-            return GuardMode.UNKNOWN
+        return self._state["guardMode"]
 
     @property
     def hardware_version(self) -> str:
         """Return the hardware version."""
-        return self._station["hardwareVersion"]
+        return self._state["hardwareVersion"]
 
     @property
     def lan_ip_address(self) -> str:
         """Return the LAN IP address."""
-        return self._station["lanIpAddress"]
+        return self._state["lanIpAddress"]
 
     @property
     def mac_address(self) -> str:
         """Return the MAC address."""
-        return self._station["macAddress"]
+        return self._state["macAddress"]
 
     @property
     def model(self) -> str:
         """Return the model ID."""
-        return self._station["model"]
+        return self._state["model"]
 
     @property
     def name(self) -> str:
         """Return the name."""
-        return self._station["name"]
+        return self._state["name"]
 
     @property
     def serial_number(self) -> str:
         """Return the serial number."""
-        return self._serial_number
+        return self._state["serialNumber"]
 
     @property
     def software_version(self) -> str:
         """Return the software version."""
-        return self._station["softwareVersion"]
+        return self._state["softwareVersion"]
+
+    @property
+    def type(self) -> str:
+        """Return the type."""
+        return self._state["type"]
 
     def handle_connected(self, _: Event) -> None:
         """Handle a "connected" event."""
@@ -124,7 +96,7 @@ class Station(EventBase):
 
     def handle_property_changed(self, event: Event) -> None:
         """Handle a "property changed" event."""
-        self._station[event.data["name"]] = event.data["value"]
+        self._state[event.data["name"]] = event.data["value"]
 
     def receive_event(self, event: Event) -> None:
         """React to an event."""

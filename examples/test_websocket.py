@@ -4,8 +4,8 @@ import logging
 
 from aiohttp import ClientSession
 
-from eufy_security_ws import WebsocketClient
-from eufy_security_ws.errors import CannotConnectError
+from eufy_security_ws_python import WebsocketClient
+from eufy_security_ws_python.errors import CannotConnectError
 
 _LOGGER = logging.getLogger()
 

@@ -1,13 +1,18 @@
 """Define a client to connect to the websocket server."""
 import asyncio
+from types import TracebackType
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
 
-from .const import LOGGER, MIN_SERVER_SCHEMA_VERSION, MAX_SERVER_SCHEMA_VERSION
-from .errors import (
+from eufy_security_ws.const import (
+    LOGGER,
+    MIN_SERVER_SCHEMA_VERSION,
+    MAX_SERVER_SCHEMA_VERSION,
+)
+from eufy_security_ws.errors import (
     CannotConnectError,
     ConnectionClosed,
     ConnectionFailed,
@@ -16,9 +21,9 @@ from .errors import (
     InvalidServerVersion,
     NotConnectedError,
 )
-from .event import Event
-from .model.driver import Driver
-from .model.version import VersionInfo
+from eufy_security_ws.event import Event
+from eufy_security_ws.model.driver import Driver
+from eufy_security_ws.model.version import VersionInfo
 
 SIZE_PARSE_JSON_EXECUTOR = 8192
 
@@ -37,6 +42,17 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         self._ws_server_uri = ws_server_uri
         self.driver: Optional[Driver] = None
         self.version: Optional[VersionInfo] = None
+
+    async def __aenter__(self) -> "WebsocketClient":
+        """Connect to the websocket."""
+        await self.async_connect()
+        return self
+
+    async def __aexit__(
+        self, exc_type: Exception, exc_value: str, traceback: TracebackType
+    ) -> None:
+        """Disconnect from the websocket."""
+        await self.async_disconnect()
 
     @property
     def connected(self) -> bool:
@@ -196,7 +212,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 await self._client.close()
                 raise FailedCommand(state_msg["messageId"], state_msg["errorCode"])
 
-            self.driver = Driver(state_msg["result"]["state"])
+            self.driver = Driver(self, state_msg["result"]["state"])
             driver_ready.set()
 
             LOGGER.info("Started listening to websocket server")
@@ -221,7 +237,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
     async def async_send_command(
         self, payload: Dict[str, Any], *, require_schema: int = None
     ) -> dict:
-        """Send a command to the websocket server and receive a response."""
+        """Send a command to the websocket server and wait for a response."""
         if require_schema and require_schema > self._ws_server_schema_version:
             raise InvalidServerVersion(
                 "Command unavailable due to an incompatible eufy-websocket-ws version. "

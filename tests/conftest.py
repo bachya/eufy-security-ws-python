@@ -163,11 +163,7 @@ def version_data_fixture(loop):
 
 @pytest.fixture(name="ws_client")
 async def ws_client_fixture(
-    loop,
-    messages,
-    result,
-    set_api_schema_data,
-    version_data,
+    loop, messages, result, set_api_schema_data, version_data,
 ):
     """Mock a websocket client.
 

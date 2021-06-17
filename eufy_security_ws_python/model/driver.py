@@ -12,33 +12,33 @@ if TYPE_CHECKING:
 class Driver(EventBase):
     """Define the driver."""
 
-    def __init__(self, client: "WebsocketClient", state: dict) -> None:
+    def __init__(self, client: "WebsocketClient", controller_state: dict) -> None:
         """Initialize."""
         super().__init__()
-        self._state = state
-        self.devices: Dict[str, Device] = {
+        self._controller_state = controller_state
+        self.stations: Dict[str, Device] = {
             station_state["serialNumber"]: Station(client, station_state)
-            for station_state in state["stations"]
+            for station_state in controller_state["result"]["state"]["stations"]
         }
-        self.stations: Dict[str, Station] = {
+        self.devices: Dict[str, Station] = {
             device_state["serialNumber"]: Device(client, device_state)
-            for device_state in state["devices"]
+            for device_state in controller_state["result"]["state"]["devices"]
         }
 
     @property
     def connected(self) -> bool:
         """Return whether the driver is connected."""
-        return self._state["driver"]["connected"]
+        return self._controller_state["result"]["state"]["driver"]["connected"]
 
     @property
     def push_connected(self) -> bool:
         """Return whether the driver is connected to push events."""
-        return self._state["driver"]["pushConnected"]
+        return self._controller_state["result"]["state"]["driver"]["pushConnected"]
 
     @property
     def version(self) -> bool:
         """Return the version."""
-        return self._state["driver"]["version"]
+        return self._controller_state["result"]["state"]["driver"]["version"]
 
     def receive_event(self, event: Event) -> None:
         """React to an event."""

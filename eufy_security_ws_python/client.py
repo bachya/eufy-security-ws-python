@@ -1,8 +1,8 @@
 """Define a client to connect to the websocket server."""
 import asyncio
 from types import TracebackType
-from typing import Any, Dict, Optional
-from uuid import uuid4
+from typing import Any, Dict, Optional, cast
+import uuid
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
@@ -38,9 +38,9 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         self._result_futures: Dict[str, asyncio.Future] = {}
         self._session = session
         self._shutdown_complete_event: Optional[asyncio.Event] = None
-        self._ws_server_schema_version = MAX_SERVER_SCHEMA_VERSION
         self._ws_server_uri = ws_server_uri
         self.driver: Optional[Driver] = None
+        self.schema_version = MAX_SERVER_SCHEMA_VERSION
         self.version: Optional[VersionInfo] = None
 
     async def __aenter__(self) -> "WebsocketClient":
@@ -135,7 +135,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
             {
                 "command": "set_api_schema",
                 "messageId": "set_api_schema",
-                "schemaVersion": self._ws_server_schema_version,
+                "schemaVersion": self.schema_version,
             }
         )
 
@@ -160,8 +160,9 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
 
         if (
             self.version.min_schema_version > MIN_SERVER_SCHEMA_VERSION
-            or self.version.max_schema_version < MIN_SERVER_SCHEMA_VERSION
+            or self.version.max_schema_version < MAX_SERVER_SCHEMA_VERSION
         ):
+            await self._client.close()
             raise InvalidServerVersion(
                 f"eufy-websocket-js version is incompatible: {self.version.server_version}. "
                 "Update eufy-websocket-ws to a version that supports a minimum API "
@@ -171,14 +172,14 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         # Negotiate the highest available schema version and guard incompatibility with
         # the MIN_SERVER_SCHEMA_VERSION:
         if self.version.max_schema_version < MAX_SERVER_SCHEMA_VERSION:
-            self._ws_server_schema_version = self.version.max_schema_version
+            self.schema_version = self.version.max_schema_version
 
         LOGGER.info(
             "Connected to %s (Server %s, Driver %s, Using Schema %s)",
             self._ws_server_uri,
             self.version.server_version,
             self.version.driver_version,
-            self._ws_server_schema_version,
+            self.schema_version,
         )
 
     async def async_disconnect(self) -> None:
@@ -212,7 +213,15 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 await self._client.close()
                 raise FailedCommand(state_msg["messageId"], state_msg["errorCode"])
 
-            self.driver = Driver(self, state_msg["result"]["state"])
+            self.driver = cast(
+                Driver,
+                await self._loop.run_in_executor(
+                    None,
+                    Driver,
+                    self,
+                    state_msg,
+                ),
+            )
             driver_ready.set()
 
             LOGGER.info("Started listening to websocket server")
@@ -238,18 +247,32 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         self, payload: Dict[str, Any], *, require_schema: int = None
     ) -> dict:
         """Send a command to the websocket server and wait for a response."""
-        if require_schema and require_schema > self._ws_server_schema_version:
+        if require_schema and require_schema > self.schema_version:
             raise InvalidServerVersion(
                 "Command unavailable due to an incompatible eufy-websocket-ws version. "
                 "Update eufy-websocket-ws to a version that supports a minimum API "
                 f"schema of {require_schema}."
             )
 
-        future = self._loop.create_future()
-        message_id = payload["messageId"] = uuid4().hex
+        future: "asyncio.Future[dict]" = self._loop.create_future()
+        message_id = payload["messageId"] = uuid.uuid4().hex
         self._result_futures[message_id] = future
         await self._async_send_json(payload)
         try:
             return await future
         finally:
             self._result_futures.pop(message_id)
+
+    async def async_send_command_no_wait(
+        self, payload: Dict[str, Any], *, require_schema: int = None
+    ) -> dict:
+        """Send a command to the websocket server and don't wait for a response."""
+        if require_schema and require_schema > self.schema_version:
+            raise InvalidServerVersion(
+                "Command unavailable due to an incompatible eufy-websocket-ws version. "
+                "Update eufy-websocket-ws to a version that supports a minimum API "
+                f"schema of {require_schema}."
+            )
+
+        payload["messageId"] = uuid.uuid4().hex
+        await self._async_send_json(payload)

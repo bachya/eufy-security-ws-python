@@ -29,7 +29,7 @@ def create_ws_message(result):
 
 
 @pytest.fixture(name="client")
-async def client_fixture(client_session, url, ws_client):
+async def client_fixture(client_session, loop, url, ws_client):
     """Return a client with a mock websocket transport.
 
     This fixture needs to be a coroutine function to get an event loop
@@ -61,7 +61,7 @@ def driver_fixture(client, result):
 
 
 @pytest.fixture(name="driver_ready")
-async def driver_ready_fixture():
+async def driver_ready_fixture(loop):
     """Return an asyncio.Event for driver ready."""
     return asyncio.Event()
 
@@ -150,7 +150,7 @@ def url_fixture():
 
 
 @pytest.fixture(name="version_data")
-def version_data_fixture():
+def version_data_fixture(loop):
     """Return a payload with version data."""
     return {
         "driverVersion": "0.8.2",
@@ -163,7 +163,11 @@ def version_data_fixture():
 
 @pytest.fixture(name="ws_client")
 async def ws_client_fixture(
-    messages, result, set_api_schema_data, version_data,
+    loop,
+    messages,
+    result,
+    set_api_schema_data,
+    version_data,
 ):
     """Mock a websocket client.
 

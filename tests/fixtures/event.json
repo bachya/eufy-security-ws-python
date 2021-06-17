@@ -1,0 +1,10 @@
+{
+ "type": "event",
+ "event": {
+  "source": "station",
+  "event": "guard mode changed",
+  "serialNumber": "ABCDEF1234567890",
+  "guardMode": 2,
+  "currentMode": 1
+ }
+}

@@ -1,0 +1,39 @@
+{
+  "driver": {
+    "version": "0.8.2",
+    "connected": true,
+    "pushConnected": true
+  },
+  "stations": [
+    {
+      "name": "Home",
+      "model": "T8001",
+      "serialNumber": "ABCDEF1234567890",
+      "hardwareVersion": "P1",
+      "softwareVersion": "2.1.6.9",
+      "lanIpAddress": "192.16.10.101",
+      "macAddress": "AB:CD:EF:12:34:56",
+      "currentMode": 1,
+      "guardMode": 2,
+      "connected": true
+    }
+  ],
+  "devices": [
+    {
+      "name": "Driveway",
+      "model": "T8111",
+      "serialNumber": "AABBCCDDEEFF1234",
+      "hardwareVersion": "HAIYI-IMX323",
+      "softwareVersion": "1.9.3",
+      "stationSerialNumber": "ABCDEF1234567890",
+      "enabled": true,
+      "motionDetected": false,
+      "personDetected": false,
+      "personName": "",
+      "autoNightvision": true,
+      "motionDetection": true,
+      "watermark": 0,
+      "pictureUrl": "https://images.com/image"
+    }
+  ]
+}

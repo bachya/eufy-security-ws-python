@@ -1,4 +1,6 @@
 """Define a Eufy Security device."""
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 from eufy_security_ws_python.event import Event, EventBase

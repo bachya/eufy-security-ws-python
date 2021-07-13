@@ -1,6 +1,8 @@
 """Define a utilities related to websocket events."""
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List
+from typing import Callable
 
 from eufy_security_ws_python.const import LOGGER
 
@@ -18,7 +20,7 @@ class EventBase:
 
     def __init__(self) -> None:
         """Initialize event base."""
-        self._listeners: Dict[str, List[Callable]] = {}
+        self._listeners: dict[str, list[Callable]] = {}
 
     def on(  # pylint: disable=invalid-name
         self, event_name: str, callback: Callable

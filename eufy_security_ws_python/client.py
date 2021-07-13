@@ -1,11 +1,17 @@
 """Define a client to connect to the websocket server."""
+from __future__ import annotations
+
 import asyncio
 from types import TracebackType
-from typing import Any, Dict, Optional, cast
+from typing import Any, Optional, cast
 import uuid
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
-from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
+from aiohttp.client_exceptions import (
+    ClientError,
+    ServerDisconnectedError,
+    WSServerHandshakeError,
+)
 
 from eufy_security_ws_python.const import (
     LOGGER,
@@ -35,7 +41,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         """Initialize."""
         self._client: Optional[ClientWebSocketResponse] = None
         self._loop = asyncio.get_running_loop()
-        self._result_futures: Dict[str, asyncio.Future] = {}
+        self._result_futures: dict[str, asyncio.Future] = {}
         self._session = session
         self._shutdown_complete_event: Optional[asyncio.Event] = None
         self._ws_server_uri = ws_server_uri
@@ -112,7 +118,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
 
         return data
 
-    async def _async_send_json(self, payload: Dict[str, Any]) -> None:
+    async def _async_send_json(self, payload: dict[str, Any]) -> None:
         """Send a JSON message to the websocket server.
 
         Raises NotConnectedError if client is not connected.
@@ -153,8 +159,10 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
             self._client = await self._session.ws_connect(
                 self._ws_server_uri, heartbeat=55
             )
+        except ServerDisconnectedError as err:
+            raise ConnectionClosed from err
         except (ClientError, WSServerHandshakeError) as err:
-            raise CannotConnectError(err) from err
+            raise CannotConnectError from err
 
         self.version = VersionInfo.from_message(await self._async_receive_json())
 
@@ -244,7 +252,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 self._shutdown_complete_event.set()
 
     async def async_send_command(
-        self, payload: Dict[str, Any], *, require_schema: int = None
+        self, payload: dict[str, Any], *, require_schema: int = None
     ) -> dict:
         """Send a command to the websocket server and wait for a response."""
         if require_schema and require_schema > self.schema_version:
@@ -264,7 +272,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
             self._result_futures.pop(message_id)
 
     async def async_send_command_no_wait(
-        self, payload: Dict[str, Any], *, require_schema: int = None
+        self, payload: dict[str, Any], *, require_schema: int = None
     ) -> dict:
         """Send a command to the websocket server and don't wait for a response."""
         if require_schema and require_schema > self.schema_version:

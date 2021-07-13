@@ -19,7 +19,7 @@ use_parentheses = true
 
 [tool.poetry]
 name = "eufy_security_ws_python"
-version = "0.0.3"
+version = "0.0.4"
 description = "A Python wrapper around eufy-security-ws"
 readme = "README.md"
 authors = ["Aaron Bach <bachya1208@gmail.com>"]

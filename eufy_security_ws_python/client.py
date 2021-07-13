@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from types import TracebackType
-from typing import Any, Optional
+from typing import Any, Optional, cast
 import uuid
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
@@ -118,7 +118,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
 
         return data
 
-    async def _async_send_json(self, payload: Dict[str, Any]) -> None:
+    async def _async_send_json(self, payload: dict[str, Any]) -> None:
         """Send a JSON message to the websocket server.
 
         Raises NotConnectedError if client is not connected.
@@ -221,7 +221,15 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 await self._client.close()
                 raise FailedCommand(state_msg["messageId"], state_msg["errorCode"])
 
-            self.driver = await Driver.from_state(self, state_msg)
+            self.driver = cast(
+                Driver,
+                await self._loop.run_in_executor(
+                    None,
+                    Driver,
+                    self,
+                    state_msg,
+                ),
+            )
             driver_ready.set()
 
             LOGGER.info("Started listening to websocket server")
@@ -244,7 +252,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 self._shutdown_complete_event.set()
 
     async def async_send_command(
-        self, payload: Dict[str, Any], *, require_schema: int = None
+        self, payload: dict[str, Any], *, require_schema: int = None
     ) -> dict:
         """Send a command to the websocket server and wait for a response."""
         if require_schema and require_schema > self.schema_version:
@@ -264,7 +272,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
             self._result_futures.pop(message_id)
 
     async def async_send_command_no_wait(
-        self, payload: Dict[str, Any], *, require_schema: int = None
+        self, payload: dict[str, Any], *, require_schema: int = None
     ) -> dict:
         """Send a command to the websocket server and don't wait for a response."""
         if require_schema and require_schema > self.schema_version:

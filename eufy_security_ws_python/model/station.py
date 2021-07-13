@@ -18,7 +18,6 @@ class Station(EventBase):
 
         self._client = client
         self._state = state
-        self.metadata: dict[str, Any] = {}
 
     def __repr__(self) -> str:
         """Return the representation."""
@@ -89,17 +88,14 @@ class Station(EventBase):
         """Return the type."""
         return self._state["type"]
 
-    @classmethod
-    async def from_state(cls, client: "WebsocketClient", state: dict[str, Any]) -> None:
-        """Save this station's metadata."""
-        station = cls(client, state)
-        station.metadata = client.async_send_command(
+    async def async_get_properties_metadata(self) -> dict[str, Any]:
+        """Get all properties metadata for this station."""
+        return await self._client.async_send_command(
             {
                 "command": "station.get_properties_metadata",
-                "serialNumber": station.serial_number,
+                "serialNumber": self.serial_number,
             }
         )
-        return station
 
     def handle_connected(self, _: Event) -> None:
         """Handle a "connected" event."""

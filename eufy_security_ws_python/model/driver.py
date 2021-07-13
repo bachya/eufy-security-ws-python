@@ -1,7 +1,7 @@
 """Define the eufy-security-ws driver."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from eufy_security_ws_python.event import Event, EventBase
 from eufy_security_ws_python.model.device import Device
@@ -14,13 +14,19 @@ if TYPE_CHECKING:
 class Driver(EventBase):
     """Define the driver."""
 
-    def __init__(self, state: dict[str, Any]) -> None:
+    def __init__(self, client: "WebsocketClient", state: dict) -> None:
         """Initialize."""
         super().__init__()
 
         self._state = state
-        self.devices: dict[str, Device] = {}
-        self.stations: dict[str, Station] = {}
+        self.stations: dict[str, Device] = {
+            station_state["serialNumber"]: Station(client, station_state)
+            for station_state in state["result"]["state"]["stations"]
+        }
+        self.devices: dict[str, Station] = {
+            device_state["serialNumber"]: Device(client, device_state)
+            for device_state in state["result"]["state"]["devices"]
+        }
 
     @property
     def connected(self) -> bool:
@@ -36,18 +42,6 @@ class Driver(EventBase):
     def version(self) -> bool:
         """Return the version."""
         return self._state["result"]["state"]["driver"]["version"]
-
-    @classmethod
-    async def from_state(cls, client: "WebsocketClient", state: dict[str, Any]) -> None:
-        """Save this station's metadata."""
-        driver = cls(state)
-        for device_state in state["result"]["state"]["devices"]:
-            device = await Device.from_state(client, device_state)
-            driver.devices[device.serial_number] = device
-        for station_state in state["result"]["state"]["stations"]:
-            station = await Station.from_state(client, station_state)
-            driver.stations[station.serial_number] = station
-        return driver
 
     def receive_event(self, event: Event) -> None:
         """React to an event."""

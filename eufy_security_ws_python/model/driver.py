@@ -1,5 +1,7 @@
 """Define the eufy-security-ws driver."""
-from typing import TYPE_CHECKING, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from eufy_security_ws_python.event import Event, EventBase
 from eufy_security_ws_python.model.device import Device
@@ -12,33 +14,40 @@ if TYPE_CHECKING:
 class Driver(EventBase):
     """Define the driver."""
 
-    def __init__(self, client: "WebsocketClient", controller_state: dict) -> None:
+    def __init__(self, state: dict[str, Any]) -> None:
         """Initialize."""
         super().__init__()
-        self._controller_state = controller_state
-        self.stations: Dict[str, Device] = {
-            station_state["serialNumber"]: Station(client, station_state)
-            for station_state in controller_state["result"]["state"]["stations"]
-        }
-        self.devices: Dict[str, Station] = {
-            device_state["serialNumber"]: Device(client, device_state)
-            for device_state in controller_state["result"]["state"]["devices"]
-        }
+
+        self._state = state
+        self.devices: dict[str, Device] = {}
+        self.stations: dict[str, Station] = {}
 
     @property
     def connected(self) -> bool:
         """Return whether the driver is connected."""
-        return self._controller_state["result"]["state"]["driver"]["connected"]
+        return self._state["result"]["state"]["driver"]["connected"]
 
     @property
     def push_connected(self) -> bool:
         """Return whether the driver is connected to push events."""
-        return self._controller_state["result"]["state"]["driver"]["pushConnected"]
+        return self._state["result"]["state"]["driver"]["pushConnected"]
 
     @property
     def version(self) -> bool:
         """Return the version."""
-        return self._controller_state["result"]["state"]["driver"]["version"]
+        return self._state["result"]["state"]["driver"]["version"]
+
+    @classmethod
+    async def from_state(cls, client: "WebsocketClient", state: dict[str, Any]) -> None:
+        """Save this station's metadata."""
+        driver = cls(state)
+        for device_state in state["result"]["state"]["devices"]:
+            device = await Device.from_state(client, device_state)
+            driver.devices[device.serial_number] = device
+        for station_state in state["result"]["state"]["stations"]:
+            station = await Station.from_state(client, station_state)
+            driver.stations[station.serial_number] = station
+        return driver
 
     def receive_event(self, event: Event) -> None:
         """React to an event."""

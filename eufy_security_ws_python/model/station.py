@@ -1,5 +1,7 @@
 """Define a Eufy Security base station."""
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from eufy_security_ws_python.event import Event, EventBase
 
@@ -10,11 +12,13 @@ if TYPE_CHECKING:
 class Station(EventBase):
     """Define the station."""
 
-    def __init__(self, client: "WebsocketClient", state: dict) -> None:
+    def __init__(self, client: "WebsocketClient", state: dict[str, Any]) -> None:
         """Initialize."""
         super().__init__()
+
         self._client = client
         self._state = state
+        self.metadata: dict[str, Any] = {}
 
     def __repr__(self) -> str:
         """Return the representation."""
@@ -84,6 +88,18 @@ class Station(EventBase):
     def type(self) -> str:
         """Return the type."""
         return self._state["type"]
+
+    @classmethod
+    async def from_state(cls, client: "WebsocketClient", state: dict[str, Any]) -> None:
+        """Save this station's metadata."""
+        station = cls(client, state)
+        station.metadata = client.async_send_command(
+            {
+                "command": "station.get_properties_metadata",
+                "serialNumber": station.serial_number,
+            }
+        )
+        return station
 
     def handle_connected(self, _: Event) -> None:
         """Handle a "connected" event."""

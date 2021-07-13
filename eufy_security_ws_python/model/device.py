@@ -1,5 +1,7 @@
 """Define a Eufy Security device."""
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from eufy_security_ws_python.event import Event, EventBase
 
@@ -10,11 +12,13 @@ if TYPE_CHECKING:
 class Device(EventBase):
     """Define a base device."""
 
-    def __init__(self, client: "WebsocketClient", state: dict) -> None:
+    def __init__(self, client: "WebsocketClient", state: dict[str, Any]) -> None:
         """Initialize."""
         super().__init__()
+
         self._client = client
         self._state = state
+        self.metadata: dict[str, Any] = {}
 
     def __repr__(self) -> str:
         """Return the representation."""
@@ -69,6 +73,18 @@ class Device(EventBase):
     def type(self) -> str:
         """Return the type."""
         return self._state["type"]
+
+    @classmethod
+    async def from_state(cls, client: "WebsocketClient", state: dict[str, Any]) -> None:
+        """Save this station's metadata."""
+        device = cls(client, state)
+        device.metadata = client.async_send_command(
+            {
+                "command": "device.get_properties_metadata",
+                "serialNumber": device.serial_number,
+            }
+        )
+        return device
 
     def handle_property_changed(self, event: Event) -> None:
         """Handle a "property changed" event."""

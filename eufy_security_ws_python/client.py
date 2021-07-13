@@ -1,11 +1,17 @@
 """Define a client to connect to the websocket server."""
+from __future__ import annotations
+
 import asyncio
 from types import TracebackType
-from typing import Any, Dict, Optional, cast
+from typing import Any, Optional
 import uuid
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
-from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
+from aiohttp.client_exceptions import (
+    ClientError,
+    ServerDisconnectedError,
+    WSServerHandshakeError,
+)
 
 from eufy_security_ws_python.const import (
     LOGGER,
@@ -35,7 +41,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
         """Initialize."""
         self._client: Optional[ClientWebSocketResponse] = None
         self._loop = asyncio.get_running_loop()
-        self._result_futures: Dict[str, asyncio.Future] = {}
+        self._result_futures: dict[str, asyncio.Future] = {}
         self._session = session
         self._shutdown_complete_event: Optional[asyncio.Event] = None
         self._ws_server_uri = ws_server_uri
@@ -153,8 +159,10 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
             self._client = await self._session.ws_connect(
                 self._ws_server_uri, heartbeat=55
             )
+        except ServerDisconnectedError as err:
+            raise ConnectionClosed from err
         except (ClientError, WSServerHandshakeError) as err:
-            raise CannotConnectError(err) from err
+            raise CannotConnectError from err
 
         self.version = VersionInfo.from_message(await self._async_receive_json())
 
@@ -213,15 +221,7 @@ class WebsocketClient:  # pylint: disable=too-many-instance-attributes
                 await self._client.close()
                 raise FailedCommand(state_msg["messageId"], state_msg["errorCode"])
 
-            self.driver = cast(
-                Driver,
-                await self._loop.run_in_executor(
-                    None,
-                    Driver,
-                    self,
-                    state_msg,
-                ),
-            )
+            self.driver = await Driver.from_state(self, state_msg)
             driver_ready.set()
 
             LOGGER.info("Started listening to websocket server")

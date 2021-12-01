@@ -61,7 +61,7 @@ jobs:
             --cov-report xml \
             --cov=eufy-security-ws-python tests
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 

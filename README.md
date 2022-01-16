@@ -1,5 +1,7 @@
 # 🚨 eufy-security-ws-python: A Python wrapper around eufy-security-ws
 
+**NOTE: THIS PROJECT IS NO LONGER ACTIVE. AS AN ALTERNATIVE, PLEASE CHECK OUT https://github.com/fuatakgun/eufy_security.**
+
 [![CI](https://github.com/bachya/eufy-security-ws-python/workflows/CI/badge.svg)](https://github.com/bachya/eufy-security-ws-python/actions)
 [![PyPi](https://img.shields.io/pypi/v/eufy-security-ws-python.svg)](https://pypi.python.org/pypi/eufy-security-ws-python)
 [![Version](https://img.shields.io/pypi/pyversions/eufy-security-ws-python.svg)](https://pypi.python.org/pypi/eufy-security-ws-python)
